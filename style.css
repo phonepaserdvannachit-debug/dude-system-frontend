@@ -34,16 +34,16 @@
 
 body{
   font-family:var(--font-body);
-  background: linear-gradient(135deg,#071520 0%,#0D2535 100%);
+  background:var(--sky);
   display:flex; justify-content:center; align-items:flex-start;
-  min-height:100vh; padding:24px 12px;
+  min-height:100vh; padding:0;
 }
 
 .phone{
-  width:390px; min-height:780px;
+  width:min(100%, 520px); min-height:100vh;
   background: linear-gradient(180deg, var(--sky) 0%, #D8EEF8 30%, #EDF5FA 100%);
-  border-radius:38px; position:relative; overflow:hidden;
-  box-shadow: 0 30px 70px rgba(0,0,0,0.55), 0 0 0 8px #071520, 0 0 0 9.5px #1A3A50;
+  border-radius:0; position:relative; overflow:hidden;
+  box-shadow:none;
 }
 
 .view{ display:none; padding:20px 18px 100px; min-height:780px; }
@@ -586,4 +586,170 @@ button:disabled{
 }
 .upload-mini-btn input{
   display:none;
+}
+
+
+/* ===== DETAIL SHARE INFO ===== */
+.sharer-status-row.enhanced{
+  align-items:center;
+  gap:8px;
+}
+.sharer-main{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.sharer-name{
+  color:var(--ink);
+}
+.sharer-net{
+  font-size:10.5px;
+  color:var(--ink-soft);
+}
+.sharer-net.owes{ color:#B03426; }
+.sharer-net.receives{ color:#1A7A44; }
+.sharer-actions{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex-shrink:0;
+}
+.info-dot{
+  width:21px;
+  height:21px;
+  border-radius:50%;
+  border:none;
+  background:rgba(13,107,140,0.13);
+  color:var(--sky-deep);
+  font-family:var(--font-display);
+  font-weight:700;
+  cursor:pointer;
+}
+.share-popup-overlay{
+  position:absolute;
+  inset:0;
+  z-index:80;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(15,35,51,0.28);
+  padding:24px;
+}
+.share-popup-overlay.unpaid{
+  align-items:flex-start;
+  justify-content:flex-end;
+  padding-top:150px;
+}
+.share-popup-card{
+  background:var(--paper);
+  border-radius:18px;
+  box-shadow:0 18px 48px rgba(15,35,51,0.28);
+  padding:12px;
+  max-width:86%;
+  max-height:72vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.share-popup-overlay.unpaid .share-popup-card{
+  max-width:210px;
+  padding:12px 16px;
+  border-radius:999px;
+}
+.share-popup-slip{
+  max-width:100%;
+  max-height:66vh;
+  object-fit:contain;
+  border-radius:12px;
+}
+.share-popup-number{
+  font-family:var(--font-display);
+  font-size:20px;
+  font-weight:700;
+  color:var(--coral);
+  text-align:center;
+  line-height:1.25;
+}
+.share-popup-number small{
+  display:block;
+  font-family:var(--font-body);
+  font-size:11px;
+  color:var(--ink-soft);
+  margin-bottom:2px;
+}
+
+/* ===== THEME AND RESPONSIVE WEBSITE SHELL ===== */
+body.theme-dark{
+  background:#071520;
+}
+body.theme-dark .phone{
+  background:linear-gradient(180deg,#102533 0%,#122D3C 100%);
+}
+body.theme-dark .view,
+body.theme-dark .subbar h2,
+body.theme-dark .login-title,
+body.theme-dark .bill-card-head .date,
+body.theme-dark .detail-date,
+body.theme-dark .sharer-status-list .title,
+body.theme-dark .user-info .name{
+  color:#F3FAFE;
+}
+body.theme-dark .bill-card,
+body.theme-dark .detail-card,
+body.theme-dark .sharer-status-list,
+body.theme-dark .my-summary,
+body.theme-dark .setting-group,
+body.theme-dark .user-row,
+body.theme-dark .table-wrap,
+body.theme-dark .state-box{
+  background:#0F2333;
+  color:#F3FAFE;
+}
+body.theme-dark .bill-row .label,
+body.theme-dark .login-sub,
+body.theme-dark .ink-soft,
+body.theme-dark .setting-section-label,
+body.theme-dark .field-label,
+body.theme-dark .pay-to,
+body.theme-dark .user-info .aka,
+body.theme-dark .sharer-net{
+  color:#A9C3CF;
+}
+body.theme-dark .form-input,
+body.theme-dark .form-select,
+body.theme-dark .search-box,
+body.theme-dark .chat-input-row input{
+  background:#102B3A;
+  color:#F3FAFE;
+  border-color:rgba(255,255,255,0.12);
+}
+.color-row{
+  display:flex;
+  gap:10px;
+  padding:4px 0 8px;
+}
+.color-swatch{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  border:3px solid white;
+  box-shadow:0 2px 10px rgba(15,35,51,0.18);
+  cursor:pointer;
+}
+
+@media (min-width: 760px){
+  body{ padding:0; }
+  .phone{
+    width:100%;
+    max-width:960px;
+  }
+  .view{
+    max-width:720px;
+    margin:0 auto;
+  }
+  .split-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
 }

@@ -72,6 +72,8 @@ let editGoodsRows = [];
 let editingBillId = null;
 let billDetailCache = new Map();
 let appIsBooted = false;
+let currentTheme = localStorage.getItem("dude_theme") || "light";
+let currentAccent = localStorage.getItem("dude_accent") || "#0D6B8C";
 
 function getApiBase(){
   return (localStorage.getItem(CONFIG.apiBaseKey) || CONFIG.defaultApiBase).replace(/\/+$/, "");
@@ -203,6 +205,7 @@ async function boot(){
   if(appIsBooted) return;
   appIsBooted = true;
   restoreCachedUser();
+  applyTheme(currentTheme, currentAccent);
 
   if(authToken()){
     try{
@@ -561,7 +564,20 @@ async function openDetail(billId){
       <div class="split-grid">
         <div class="sharer-status-list">
           <div class="title">All Sharers</div>
-          ${shares.map(share => `<div class="sharer-status-row"><span>${escapeHtml(share.person?.name || share.person_name || "Unknown")}</span><span class="tag ${share.paid_stt ? "paid" : "unpaid"}">${share.paid_stt ? "Paid" : "Unpaid"}</span></div>`).join("")}
+          ${shares.map(share => {
+            const netAbs = formatKip(Math.abs(share.net_value || 0));
+            const statusText = share.paid_stt ? "Paid" : "Unpaid";
+            return `<div class="sharer-status-row enhanced">
+              <div class="sharer-main">
+                <span class="sharer-name">${escapeHtml(share.person?.name || share.person_name || "Unknown")}</span>
+                <span class="sharer-net ${share.net_value < 0 ? "owes" : "receives"}">${share.net_value < 0 ? "Pay" : "Net"}: ${netAbs} Kip</span>
+              </div>
+              <div class="sharer-actions">
+                <span class="tag ${share.paid_stt ? "paid" : "unpaid"}">${statusText}</span>
+                <button class="info-dot" onclick="showShareInfo(${billId}, ${share.id})" title="Payment info">i</button>
+              </div>
+            </div>`;
+          }).join("")}
         </div>
         <div class="my-summary">
           <div class="row"><span>Your Cost</span><b>${formatKip(myShare?.cost || 0)}</b></div>
@@ -579,6 +595,35 @@ async function openDetail(billId){
   }catch(err){
     document.getElementById("detail-body").innerHTML = showEmpty(err.message || "Could not load bill detail");
   }
+}
+
+async function showShareInfo(billId, shareId){
+  await ensureBillDetail(billId);
+  const share = sharesForBill(billId).find(item => Number(item.id) === Number(shareId));
+  if(!share) return;
+
+  let content = "";
+  if(share.paid_stt){
+    try{
+      const slip = await apiRequest(`/slips/shares/${share.id}`);
+      const slipUrl = slip?.storage_url ? normalizeApiPath(slip.storage_url) : "";
+      content = slipUrl
+        ? (String(slip.file_type || "").includes("pdf")
+          ? `<a class="slip-link" href="${slipUrl}" target="_blank" rel="noreferrer">Open PDF slip</a>`
+          : `<img class="share-popup-slip" src="${slipUrl}" alt="Payment slip">`)
+        : `<div class="share-popup-number">Paid</div>`;
+    }catch(err){
+      content = `<div class="share-popup-number">Paid<br><small>No slip found</small></div>`;
+    }
+  }else{
+    content = `<div class="share-popup-number"><small>Need to pay</small>${formatKip(Math.abs(share.net_value || 0))} Kip</div>`;
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = `share-popup-overlay ${share.paid_stt ? "paid" : "unpaid"}`;
+  overlay.onclick = () => overlay.remove();
+  overlay.innerHTML = `<div class="share-popup-card" onclick="event.stopPropagation()">${content}</div>`;
+  document.querySelector(".phone").appendChild(overlay);
 }
 
 async function goPay(billId){
@@ -1153,7 +1198,10 @@ function renderSetting(){
   document.getElementById("setting-body").innerHTML = `
     <div class="setting-section-label">Account</div>
     <div class="setting-group">
-      <div class="setting-row"><span>Display name - <b>${escapeHtml(user.name || "")}</b></span><span class="arrow">${escapeHtml(user.user_name || "")}</span></div>
+      <div class="setting-row" onclick="editDisplayName()"><span>Display name - <b>${escapeHtml(user.name || "")}</b></span><span class="arrow">Edit</span></div>
+      <div class="setting-row"><span>Login username</span><span class="arrow">${escapeHtml(user.user_name || "")}</span></div>
+      <div class="setting-row" onclick="revealPin()"><span>4-digit PIN</span><span class="arrow" id="pin-mask">****</span></div>
+      <div class="setting-row" onclick="changePin()"><span>Change PIN</span><span class="arrow">Edit</span></div>
       <div class="setting-row"><span>Role</span><span class="arrow">${user.is_admin ? "Admin" : "Member"}</span></div>
     </div>
     <div class="setting-section-label">Images</div>
@@ -1173,6 +1221,14 @@ function renderSetting(){
         </label>
       </div>
     </div>
+    <div class="setting-section-label">Appearance</div>
+    <div class="setting-group setting-api">
+      <div class="setting-row"><span>Dark theme</span><label class="toggle"><input type="checkbox" ${currentTheme === "dark" ? "checked" : ""} onchange="toggleTheme(this)"><span class="slider"></span></label></div>
+      <label class="field-label">Common color</label>
+      <div class="color-row">
+        ${["#0D6B8C", "#1F8A5B", "#7A4CC9", "#C94C4C", "#C9A84C"].map(color => `<button class="color-swatch" style="background:${color}" onclick="setAccentColor('${color}')" title="${color}"></button>`).join("")}
+      </div>
+    </div>
     <div class="setting-section-label">Backend</div>
     <div class="setting-group setting-api">
       <label class="field-label" for="setting-api-base">Railway API URL</label>
@@ -1181,13 +1237,60 @@ function renderSetting(){
     </div>
     <div class="setting-section-label">App</div>
     <div class="setting-group">
-      <div class="setting-row"><span>Theme</span><label class="toggle"><input type="checkbox" onchange="toggleTheme(this)"><span class="slider"></span></label></div>
       <div class="setting-row"><span>Currency</span><span class="arrow">Kip</span></div>
     </div>
     <div class="setting-section-label">Danger zone</div>
     <div class="setting-group">
       <div class="setting-row danger-text" onclick="logout()"><span>Log out</span><span class="arrow">></span></div>
     </div>`;
+}
+
+async function editDisplayName(){
+  const current = CURRENT_USER?.name || "";
+  const name = window.prompt("New display name", current);
+  if(name === null) return;
+  const clean = name.trim();
+  if(!clean){ showToast("Name cannot be empty"); return; }
+
+  try{
+    const user = await apiRequest("/auth/me", { method: "PATCH", body: { name: clean } });
+    saveSession(authToken(), user);
+    showToast("Display name updated");
+    renderSetting();
+    renderUserList();
+  }catch(err){
+    showToast(err.message || "Could not update name");
+  }
+}
+
+async function revealPin(){
+  const pin = window.prompt("Type current 4-digit PIN to reveal");
+  if(pin === null) return;
+  try{
+    const result = await apiRequest("/auth/me/pin/verify", { method: "POST", body: { password: pin } });
+    document.getElementById("pin-mask").textContent = result.verified ? pin : "Wrong PIN";
+    if(!result.verified) showToast("Current PIN is incorrect");
+  }catch(err){
+    showToast(err.message || "Could not verify PIN");
+  }
+}
+
+async function changePin(){
+  const current = window.prompt("Current 4-digit PIN");
+  if(current === null) return;
+  const next = window.prompt("New 4-digit PIN");
+  if(next === null) return;
+  if(!/^\d{4}$/.test(current) || !/^\d{4}$/.test(next)){
+    showToast("PIN must be exactly 4 digits");
+    return;
+  }
+
+  try{
+    await apiRequest("/auth/me/pin", { method: "PATCH", body: { current_password: current, new_password: next } });
+    showToast("PIN changed");
+  }catch(err){
+    showToast(err.message || "Could not change PIN");
+  }
 }
 
 async function uploadAccountImage(kind, input){
@@ -1228,10 +1331,22 @@ function openApiPrompt(){
   showToast("Backend URL saved");
 }
 
+function setAccentColor(color){
+  currentAccent = color;
+  localStorage.setItem("dude_accent", color);
+  applyTheme(currentTheme, currentAccent);
+}
+
+function applyTheme(theme, accent){
+  document.body.classList.toggle("theme-dark", theme === "dark");
+  document.documentElement.style.setProperty("--sky-deep", accent);
+  document.documentElement.style.setProperty("--sky-mid", accent);
+}
+
 function toggleTheme(el){
-  document.body.style.background = el.checked
-    ? "linear-gradient(135deg,#f0f4f7 0%,#dce8ef 100%)"
-    : "linear-gradient(135deg,#071520 0%,#0D2535 100%)";
+  currentTheme = el.checked ? "dark" : "light";
+  localStorage.setItem("dude_theme", currentTheme);
+  applyTheme(currentTheme, currentAccent);
 }
 
 function personById(id){ return DB.person.find(person => Number(person.id) === Number(id)); }
