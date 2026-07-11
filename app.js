@@ -395,7 +395,14 @@ function storeBillDetail(detail){
 }
 
 function upsertPerson(raw){
-  const person = normalizePerson({ ...raw, id: Number(raw.id) });
+  const existing = DB.person.find(item => Number(item.id) === Number(raw.id));
+  const person = normalizePerson({
+    ...existing,
+    ...raw,
+    id: Number(raw.id),
+    profile_pic: raw.profile_pic !== undefined ? raw.profile_pic : existing?.profile_pic,
+    qr_code: raw.qr_code !== undefined ? raw.qr_code : existing?.qr_code,
+  });
   const idx = DB.person.findIndex(item => item.id === person.id);
   if(idx >= 0) DB.person[idx] = { ...DB.person[idx], ...person };
   else DB.person.push(person);
