@@ -593,9 +593,10 @@ async function goPay(billId){
     const myShare = sharesForBill(billId).find(share => share.payer_id === CURRENT_USER_ID);
     if(!myShare) throw new Error("No share found for this user");
 
-    const qrImage = keeper?.qr_code ? `<img class="qr-img" src="${normalizeApiPath(keeper.qr_code)}" alt="QR code">` : fallbackQrSvg();
+    const hasQrImage = Boolean(keeper?.qr_code);
+    const qrImage = hasQrImage ? `<img class="qr-img" src="${normalizeApiPath(keeper.qr_code)}" alt="QR code">` : fallbackQrSvg();
     document.getElementById("pay-body").innerHTML = `
-      <div class="qr-box">${qrImage}</div>
+      <div class="qr-box ${hasQrImage ? "qr-card-box" : ""}">${qrImage}</div>
       <div>
         <div class="pay-amount">${formatKip(Math.abs(myShare.net_value || 0))} Kip</div>
         <div class="pay-to">Scan to pay ${escapeHtml(keeper?.name || bill.keeper_name || "book keeper")}</div>
