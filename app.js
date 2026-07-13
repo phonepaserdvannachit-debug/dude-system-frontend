@@ -647,7 +647,7 @@ async function goPay(billId){
         <div class="pay-to">Scan to pay ${escapeHtml(keeper?.name || bill.keeper_name || "book keeper")}</div>
       </div>
       <label class="upload-zone">
-        <input type="file" accept="image/png,image/jpeg,application/pdf" onchange="handleSlipUpload(${billId}, this.files[0])">
+        <input type="file" accept="image/png,image/jpg,image/jpeg" onchange="handleSlipUpload(${billId}, this.files[0])">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Upload slip to confirm payment
       </label>`;
@@ -658,6 +658,16 @@ async function goPay(billId){
 
 async function handleSlipUpload(billId, file){
   if(!file) return;
+  const maxSlipSize = 50 * 1024 * 1024;
+  const allowedSlipTypes = ["image/png", "image/jpg", "image/jpeg"];
+  if(file.size > maxSlipSize){
+    showToast("Slip file must be 50MB or smaller");
+    return;
+  }
+  if(!allowedSlipTypes.includes(file.type)){
+    showToast("Please upload PNG, JPG, or JPEG slip image");
+    return;
+  }
   const myShare = sharesForBill(billId).find(share => share.payer_id === CURRENT_USER_ID);
   if(!myShare){
     showToast("No share found for this bill");
